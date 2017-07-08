@@ -28,7 +28,10 @@ int cardEffect_Adventurer(struct gameState *state)
 			z++;
 		}
 	}
-	while (z - 1 >= 0)
+	// BUG: Should be z-1 >= 0
+	// This will cause one extra card to be discarded
+	// It shouldn't crash because the player is guaranteed to have 2 treasure cards in hand
+	while (z >= 0)
 	{
 		state->discard[currentPlayer][state->discardCount[currentPlayer]++] =
 			temphand[z - 1]; // discard all cards in play that have been drawn
@@ -42,13 +45,15 @@ int cardEffect_Smithy(struct gameState *state, int handPos)
 	int i = 0;
 	int currentPlayer = whoseTurn(state);
 	//+3 Cards
-	for (i = 0; i < 3; i++)
+	// BUG: <= causes one extra iteration for +4 cards
+	for (i = 0; i <= 3; i++)
 	{
 		drawCard(currentPlayer, state);
 	}
 
 	// discard card from hand
-	discardCard(handPos, currentPlayer, state, 0);
+	// BUG: Card is not discarded
+	// discardCard(handPos, currentPlayer, state, 0);
 	return 0;
 }
 
@@ -79,7 +84,12 @@ int cardEffect_Steward(struct gameState *state, int handPos, int choice1, int ch
 	return 0;
 }
 
-int cardEffect_Gardens(struct gameState *state) { return -1; }
+int cardEffect_Gardens(struct gameState *state) {
+	// BUG: Should return -1 for no action
+	// returning 0 will affect playCard()
+	// actions will be reduced and coins updated
+	return 0;
+}
 
 int cardEffect_Feast(struct gameState *state, int choice1)
 {
@@ -110,7 +120,9 @@ int cardEffect_Feast(struct gameState *state, int choice1)
 				printf("Cards Left: %d\n", supplyCount(choice1, state));
 			}
 		}
-		else if (state->coins < getCost(choice1))
+		// BUG: should be an else if here
+		// This will cause an infinite loop if there are no cards AND the card is too expensive
+		if (state->coins < getCost(choice1))
 		{
 			printf("That card is too expensive!\n");
 
