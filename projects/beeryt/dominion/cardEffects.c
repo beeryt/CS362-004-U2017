@@ -1,4 +1,4 @@
-#include "dominion.h"
+#include "dominion_helpers.h"
 #include <stdio.h>
 
 int cardEffect_Adventurer(struct gameState *state)

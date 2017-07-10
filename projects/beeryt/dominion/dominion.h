@@ -128,20 +128,4 @@ int getWinners(int players[MAX_PLAYERS], struct gameState *state);
 /* Set array position of each player who won (remember ties!) to
    1, others to 0 */
 
-int drawCard(int player, struct gameState *state);
-/* Draw a card from the deck into the player's hand. Will reshuffle
- * discard pile as needed */
-
-int getCost(int cardNumber);
-/* Returns the cost of the specified card */
-
-int discardCard(int handPos, int currentPlayer, struct gameState *state, int trashFlag);
-/* Moves a card from the player's hand to their discard pile */
-
-int gainCard(int supplyPos, struct gameState *state, int toFlag, int player);
-/* Moves a card from the supply to a player's hand, deck, or discard pile based on toFlag */
-
-int updateCoins(int player, struct gameState *state, int bonus);
-/* Sums up the total coins available to the player for this buy */
-
 #endif
