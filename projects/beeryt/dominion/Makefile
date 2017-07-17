@@ -8,7 +8,7 @@ SRC_OBJS := $(SRCS:=.o)
 TEST_OBJS := unity.o unity_fixture.o
 
 CC := gcc
-CFLAGS = -g -Wall -fpic -coverage -IUnity/src -IUnity/extras/fixture/src
+CFLAGS = -std=gnu99 -g -Wall -fpic -coverage -IUnity/src -IUnity/extras/fixture/src
 LDLIBS := -lm
 
 playdom: playdom.o $(SRC_OBJS)
