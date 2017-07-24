@@ -2,17 +2,19 @@
 #include<string.h>
 #include<stdlib.h>
 #include<time.h>
+#include<ctype.h>
 
+// generates a random char from the set of tested chars
+const char *charSet = "[({ ax})]";
 char inputChar()
 {
-    // TODO: rewrite this function
-    return ' ';
+    return charSet[rand() % strlen(charSet)];
 }
 
+// 50/50 chance to generate reset, otherwise something that isn't reset
 char *inputString()
 {
-    // TODO: rewrite this function
-    return "";
+    return (rand() % 2) ? "reset" : "     ";
 }
 
 void testme()
