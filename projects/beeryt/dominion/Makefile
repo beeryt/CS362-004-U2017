@@ -2,12 +2,13 @@
 SRCS := dominion cardEffects rngs
 UNIT_TESTS := unittest1.o unittest2.o unittest3.o unittest4.o \
 			cardtest1.o cardtest2.o cardtest3.o cardtest4.o
-UNITY := Unity/src/unity.c Unity/extras/fixture/src/unity_fixture.c
+RAND_TESTS := randomtestcard1.o randomtestcard2.o randomtestadventurer.o randomtest_helper.o
 
+UNITY := Unity/src/unity.c Unity/extras/fixture/src/unity_fixture.c
 SRC_OBJS := $(SRCS:=.o)
 TEST_OBJS := unity.o unity_fixture.o
 
-CC := gcc
+CC := gcc -std=gnu99
 CFLAGS = -g -Wall -fpic -coverage -IUnity/src -IUnity/extras/fixture/src
 LDLIBS := -lm
 
@@ -31,6 +32,38 @@ unity.o: Unity/src/unity.c
 
 unity_fixture.o: Unity/extras/fixture/src/unity_fixture.c
 	$(CC) $(CFLAGS) -c $^
+
+randomtests.out: $(RAND_TESTS) $(TEST_OBJS) $(SRC_OBJS)
+	gcc $(CFLAGS) -o randomtestcard1.exe randomtestcard1.o randomtest_helper.o $(TEST_OBJS) $(SRC_OBJS) $(LDLIBS)
+	gcc $(CFLAGS) -o randomtestcard2.exe randomtestcard2.o randomtest_helper.o $(TEST_OBJS) $(SRC_OBJS) $(LDLIBS)
+	gcc $(CFLAGS) -o randomtestadventurer.exe randomtestadventurer.o randomtest_helper.o $(TEST_OBJS) $(SRC_OBJS) $(LDLIBS)
+
+	echo "Running Random Tests..." > randomtests.out
+
+	echo "\n Running Random Test 1" >> randomtests.out
+	@./randomtestcard1.exe >> randomtests.out
+	@echo "\n\n----------------------------------------------\n\n" >> randomtests.out
+	@gcov randomtestcard1.c $(SRCS:=.c) > randomtestcard1.tmp
+
+	echo "\n Running Random Test 2" >> randomtests.out
+	@./randomtestcard2.exe >> randomtests.out
+	@echo "\n\n----------------------------------------------\n\n" >> randomtests.out
+	@gcov randomtestcard2.c $(SRCS:=.c) > randomtestcard2.tmp
+
+	echo "\n Running Random Test Adventurer" >> randomtests.out
+	@./randomtestadventurer.exe >> randomtests.out
+	@echo "\n\n----------------------------------------------\n\n" >> randomtests.out
+	@gcov randomtestadventurer.c $(SRCS:=.c) > randomtestadventurer.tmp
+
+	@echo "Coverages" >> randomtests.out
+	@cat randomtestcard1.tmp >> randomtests.out
+	@echo "\n\n----------------------------------------------\n\n" >> randomtests.out
+	@cat randomtestcard2.tmp >> randomtests.out
+	@echo "\n\n----------------------------------------------\n\n" >> randomtests.out
+	@cat randomtestadventurer.tmp >> randomtests.out
+	@echo "\n\n----------------------------------------------\n\n" >> randomtests.out
+
+	@rm *.tmp
 
 unittestresults.out: $(UNIT_TESTS) $(TEST_OBJS) $(SRC_OBJS)
 	gcc $(CFLAGS) -o unittest1.exe unittest1.o $(TEST_OBJS) $(SRC_OBJS) $(LDLIBS)
