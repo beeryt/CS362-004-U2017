@@ -119,6 +119,7 @@ int cardEffect_Feast(struct gameState *state, int choice1)
 			{
 				printf("Cards Left: %d\n", supplyCount(choice1, state));
 			}
+			return -1;
 		}
 		// BUG: should be an else if here
 		// This will cause an infinite loop if there are no cards AND the card is too expensive
@@ -130,6 +131,7 @@ int cardEffect_Feast(struct gameState *state, int choice1)
 			{
 				printf("Coins: %d < %d\n", state->coins, getCost(choice1));
 			}
+			return -1;
 		}
 		else
 		{
