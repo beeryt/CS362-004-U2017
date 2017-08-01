@@ -1,47 +1,73 @@
-#include "./dominion.h"
-#include "./dominion_helpers.h"
-#include "./testing_helpers.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include <unity.h>
+#include <unity_fixture.h>
+#include "dominion.h"
+#include "dominion_helpers.h"
+#include <string.h>
 
-int main() {
-	const int chosenKingdomCards[10] = {adventurer, gardens, embargo, village, minion, mine, cutpurse, sea_hag, tribute, smithy};
-	const int playerInitialHands[][MAX_HAND] = { { smithy, copper, copper, copper, copper  }, { gardens, sea_hag, tribute } , { } };
-   	const int playerInitialHandSizes[] = { 5, 3, 0 };
-	const int playerInitialDecks[][MAX_DECK] = { { gardens, embargo, village, minion }, { } };
-	const int playerInitialDeckSizes[] = { 4, 0 };
-	
-	int i, j, allHandCardsCorrectlyIdentified;
-	char buffer[256];
-	struct gameState state;
-	struct StatusTracker tracker;
+TEST_GROUP(isGameOver);
+static struct gameState *G;
+static int k_cards[10] = {adventurer, gardens,  embargo, village, minion, mine, cutpurse, sea_hag, tribute, smithy};
+static int seed = 42;
 
-	initStatusTracker(&tracker);
-	initializeTestGame(3, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	
-	printf("----handCard Function Test----\n");
 
-	addContextToTracker("Basic test that function returns card at given index in current player's hand.", &tracker);
-	for(i = 0; i < state.numPlayers; i++) {
-		allHandCardsCorrectlyIdentified = 1;
-		
-		for(j = 0; j < playerInitialHandSizes[i]; j++) {
-			if(handCard(j, &state) != playerInitialHands[i][j]) {
-				allHandCardsCorrectlyIdentified = 0;
-				break;
-			}
-		}
+// Test Setup and Teardown
+TEST_SETUP(isGameOver) {
+	G = malloc(sizeof(struct gameState));
+	initializeGame(MAX_PLAYERS, k_cards, seed, G);
+}
+TEST_TEAR_DOWN(isGameOver) {
+	free(G);
+}
 
-		sprintf(buffer, "Function should correctly identify all cards in hand of player %d", i + 1);
-		assertTrue(allHandCardsCorrectlyIdentified, buffer, &tracker); 
-		state.whoseTurn++;
-		if(i < state.numPlayers - 1) {
-			addContextToTracker("Moved to next player.", &tracker);
-		}
-	}	
-	
-	printTestResults(tracker);
-	destroyStatusTracker(&tracker);	
+// Individual Unit Tests
 
-	return 0;
+// Tests that isGameOver fails on newgame
+TEST(isGameOver, newGame)
+{
+    TEST_ASSERT_EQUAL(0, isGameOver(G));
+}
+
+// Tests that isGameOver succeeds when there are no provinces
+TEST(isGameOver, noProvinces)
+{
+    G->supplyCount[province] = 0;
+    TEST_ASSERT_EQUAL(1, isGameOver(G));
+}
+
+TEST(isGameOver, supplyDown3)
+{
+    G->supplyCount[k_cards[0]] = 0;
+    G->supplyCount[k_cards[1]] = 0;
+    G->supplyCount[k_cards[2]] = 0;
+    TEST_ASSERT_EQUAL(1, isGameOver(G));
+}
+
+TEST(isGameOver, supplyDownEdgeCase)
+{
+    G->supplyCount[treasure_map] = 0; //top most card in supply
+    G->supplyCount[curse] = 0; // bottom most card in supply
+    G->supplyCount[estate] = 0; // any other card
+    TEST_ASSERT_EQUAL(1, isGameOver(G));
+}
+
+TEST(isGameOver, noCoins)
+{
+    G->supplyCount[copper] = 0;
+    G->supplyCount[silver] = 0;
+    G->supplyCount[gold] = 0;
+    TEST_ASSERT_EQUAL(1, isGameOver(G));
+}
+
+// Setup Tests and Run Them
+TEST_GROUP_RUNNER(isGameOver);
+static void RunAllTests(void)
+{
+	RUN_TEST_CASE(isGameOver, newGame);
+	RUN_TEST_CASE(isGameOver, noProvinces);
+	RUN_TEST_CASE(isGameOver, supplyDown3);
+	RUN_TEST_CASE(isGameOver, supplyDownEdgeCase);
+	RUN_TEST_CASE(isGameOver, noCoins);
+}
+int main(int argc, char const *argv[]) {
+	UnityMain(argc, argv, RunAllTests);
 }

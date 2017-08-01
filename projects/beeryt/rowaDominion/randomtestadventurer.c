@@ -1,49 +1,203 @@
-#include "./dominion.h"
-#include "./dominion_helpers.h"
-#include "./testing_helpers.h"
+#include <unity.h>
+#include <unity_fixture.h>
+#include "dominion.h"
+#include "dominion_helpers.h"
+#include <string.h>
+#include "randomtest_helper.h"
 #include "rngs.h"
 
-int main() {
-	int i, j, expectedDrawnTreasure, expectedDiscardedCards;
-	int numTestScenarios = 100;
-	struct StatusTracker tracker;
-	struct gameState state;
-	struct gameState unchangedState;
+TEST_GROUP(cardEffectAdventurer);
+static struct gameState *G;
+static int seed = 42;
+static int p;
+static int handPos;
+#define SUPPLY_SIZE sizeof(int)*(treasure_map + 1)
+#define HAND_SIZE sizeof(int)*MAX_HAND
+#define DECK_SIZE sizeof(int)*MAX_DECK
 
-	//set up random number generator
+// Test Setup and Teardown
+TEST_SETUP(cardEffectAdventurer) {
+	G = malloc(sizeof(struct gameState));
+	randomizeGameState(G, adventurer);
+	// Ensure action playable
+	G->phase = 0;
+	G->numActions++;
+    // add adventurer to player's hand
+    p = G->whoseTurn;
+	G->hand[p][G->handCount[p]++] = adventurer;
+    // Insert some extra coppers to ensure enough treasures
+	G->deck[p][G->deckCount[p]++] = copper;
+	G->deck[p][G->deckCount[p]++] = copper;
+    for (handPos = 0; handPos < G->handCount[p]; handPos++) {
+        if (G->hand[p][handPos] == adventurer) break;
+    }
+}
+TEST_TEAR_DOWN(cardEffectAdventurer) {
+	free(G);
+}
+
+// Individual Unit Tests
+
+// Tests that cardEffectAdventurer failes given invalid player counts
+TEST(cardEffectAdventurer, deckHasTwoFewerCards)
+{
+    int initialDeckCount = G->deckCount[p];
+    int expectedDeckCount = initialDeckCount - 2;
+
+    playCard(handPos, 0, 0, 0, G);
+
+    int actualDeckCount = G->deckCount[p];
+
+    TEST_ASSERT_EQUAL(expectedDeckCount, actualDeckCount);
+}
+
+// Tests that cardEffectAdventurer succeeds and properly sets numPlayers
+TEST(cardEffectAdventurer, twoAdditionalTreasures)
+{
+    int initialTreasureCount = 0;
+    for (size_t i = 0; i < G->handCount[p]; i++) {
+        if (G->hand[p][i] == copper) initialTreasureCount++;
+		if (G->hand[p][i] == silver) initialTreasureCount += 2;
+		if (G->hand[p][i] == gold) initialTreasureCount += 3;
+    }
+
+    int expectedTreasureCount = initialTreasureCount + 2;
+
+    playCard(handPos, 0, 0, 0, G);
+
+    int actualTreasureCount = 0;
+	TEST_ASSERT_TRUE(G->handCount[p] >= 0);
+    for (size_t i = 0; i < G->handCount[p]; i++) {
+        if (G->hand[p][i] == copper) actualTreasureCount++;
+		if (G->hand[p][i] == silver) actualTreasureCount += 2;
+		if (G->hand[p][i] == gold) actualTreasureCount += 3;
+    }
+
+    TEST_ASSERT_EQUAL(expectedTreasureCount, actualTreasureCount);
+}
+
+// Tests for correct cards in supply after cardEffectAdventurer
+TEST(cardEffectAdventurer, handIncreasedByTwo)
+{
+    int initialCount = G->handCount[p];
+    int expectedCount = initialCount + 2;
+
+    playCard(handPos, 0, 0, 0, G);
+
+    int actualCount = G->handCount[p];
+
+    TEST_ASSERT_EQUAL(expectedCount, actualCount);
+}
+
+// Tests for correct cards in players' decks after cardEffectAdventurer
+TEST(cardEffectAdventurer, supplyNotAffected)
+{
+    int initialSupplyCount[treasure_map + 1];
+    memcpy(initialSupplyCount, G->supplyCount, SUPPLY_SIZE);
+
+    playCard(handPos, 0, 0, 0, G);
+
+    int actualSupplyCount[treasure_map + 1];
+    memcpy(actualSupplyCount, G->supplyCount, SUPPLY_SIZE);
+
+    TEST_ASSERT_TRUE(!memcmp(initialSupplyCount, actualSupplyCount, SUPPLY_SIZE));
+}
+
+TEST(cardEffectAdventurer, otherPlayersNotAffected)
+{
+    int hand1[MAX_PLAYERS][MAX_DECK];
+    int handCount1[MAX_PLAYERS] = {0};
+    int deck1[MAX_PLAYERS][MAX_DECK];
+    int deckCount1[MAX_PLAYERS] = {0};
+    int discard1[MAX_PLAYERS][MAX_DECK];
+    int discardCount1[MAX_PLAYERS] = {0};
+
+    // Copy initial conditions for each player
+    for (size_t i = 0; i < G->numPlayers; i++) {
+        if (p == i) continue; // ignore current player
+        handCount1[i] = G->handCount[i];
+        memcpy(hand1[i], G->hand[i], HAND_SIZE);
+
+        deckCount1[i] = G->deckCount[i];
+        memcpy(deck1[i], G->deck[i], DECK_SIZE);
+
+        discardCount1[i] = G->discardCount[i];
+        memcpy(discard1[i], G->discard[i], DECK_SIZE);
+    }
+
+    playCard(handPos, 0, 0, 0, G);
+
+    int hand2[MAX_PLAYERS][MAX_DECK];
+    int handCount2[MAX_PLAYERS] = {0};
+    int deck2[MAX_PLAYERS][MAX_DECK];
+    int deckCount2[MAX_PLAYERS] = {0};
+    int discard2[MAX_PLAYERS][MAX_DECK];
+    int discardCount2[MAX_PLAYERS] = {0};
+
+    // Copy initial conditions for each player
+    for (size_t i = 0; i < G->numPlayers; i++) {
+        if (p == i) continue; // ignore current player
+        handCount2[i] = G->handCount[i];
+        memcpy(hand2[i], G->hand[i], HAND_SIZE);
+
+        deckCount2[i] = G->deckCount[i];
+        memcpy(deck2[i], G->deck[i], DECK_SIZE);
+
+        discardCount2[i] = G->discardCount[i];
+        memcpy(discard2[i], G->discard[i], DECK_SIZE);
+
+        TEST_ASSERT_EQUAL(handCount1[i], handCount2[i]);
+        TEST_ASSERT_EQUAL(deckCount1[i], deckCount2[i]);
+        TEST_ASSERT_EQUAL(discardCount1[i], discardCount2[i]);
+
+        TEST_ASSERT_TRUE(!memcmp(hand1, hand2, HAND_SIZE));
+        TEST_ASSERT_TRUE(!memcmp(deck1, deck2, DECK_SIZE));
+        TEST_ASSERT_TRUE(!memcmp(discard1, discard2, DECK_SIZE));
+    }
+}
+
+// Tests that cardEffectAdventurer fails if a kingdom card is reapeated
+TEST(cardEffectAdventurer, buysNotAffected)
+{
+    int expectedBuys = G->numBuys;
+    playCard(handPos, 0, 0, 0, G);
+    TEST_ASSERT_EQUAL(expectedBuys, G->numBuys);
+}
+
+// Test that cardEffectAdventurer fails if a non-kingdom card is provided
+TEST(cardEffectAdventurer, numActionsDecremented)
+{
+    int expectedActions = G->numActions - 1;
+    playCard(handPos, 0, 0, 0, G);
+    TEST_ASSERT_EQUAL(expectedActions, G->numActions);
+}
+
+TEST(cardEffectAdventurer, playerTurnContinues)
+{
+    int expectedPlayer = G->whoseTurn;
+    playCard(handPos, 0, 0, 0, G);
+    TEST_ASSERT_EQUAL(expectedPlayer, G->whoseTurn);
+}
+
+// Setup Tests and Run Them
+TEST_GROUP_RUNNER(cardEffectAdventurer);
+static void RunAllTests(void)
+{
 	SelectStream(1);
-	PutSeed((long)(-1));
-
-	initStatusTracker(&tracker);
-
-	for(i = 0; i < numTestScenarios; i++) {
-		initializeRandomState(&state);
-		state.phase = 0; //need to be in action phase for playing adventurer to make sense
-		expectedDrawnTreasure = 0;
-		expectedDiscardedCards = 1; //starts at one to account for adventurer discarding itself from hand
-		for(j = 0; j < state.deckCount[state.whoseTurn]; j++) {
-			if(treasure(state.deck[state.whoseTurn][j])) {
-				expectedDrawnTreasure++;
-				if(expectedDrawnTreasure == 2) {
-					break;
-				}
-			} else {
-				expectedDiscardedCards++;
-			}
-		}
-
-		unchangedState = state;
-
-		adventurerCardEffect(state.whoseTurn, &state);	
-	
-		addContextToTracker("", &tracker);
-		assertEqual("Current player", unchangedState.whoseTurn, state.whoseTurn, &tracker);		
-		assertEqual("Number of cards added to hand", expectedDrawnTreasure, state.handCount[state.whoseTurn] - unchangedState.handCount[unchangedState.whoseTurn], &tracker);		
-		assertEqual("Number of treasure cards added to hand", expectedDrawnTreasure, treasureInHand(state, state.whoseTurn) - treasureInHand(unchangedState, unchangedState.whoseTurn), &tracker);		
-		assertEqual("Number of cards added to discard", expectedDiscardedCards, state.discardCount[state.whoseTurn] - unchangedState.discardCount[unchangedState.whoseTurn], &tracker);		
+	PutSeed(seed);
+	for (size_t i = 0; i < 100; i++) {
+		RUN_TEST_CASE(cardEffectAdventurer, deckHasTwoFewerCards);
+		RUN_TEST_CASE(cardEffectAdventurer, twoAdditionalTreasures);
+		RUN_TEST_CASE(cardEffectAdventurer, handIncreasedByTwo);
+		RUN_TEST_CASE(cardEffectAdventurer, supplyNotAffected);
+		RUN_TEST_CASE(cardEffectAdventurer, otherPlayersNotAffected);
+		RUN_TEST_CASE(cardEffectAdventurer, buysNotAffected);
+		RUN_TEST_CASE(cardEffectAdventurer, numActionsDecremented);
+		RUN_TEST_CASE(cardEffectAdventurer, playerTurnContinues);
+		randomGameFull();
 	}
+}
 
-	printFailedTestResults(tracker);
-
-	return 0;
+int main(int argc, char const *argv[]) {
+	UnityMain(argc, argv, RunAllTests);
 }

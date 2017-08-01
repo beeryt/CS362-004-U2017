@@ -1,80 +1,126 @@
-#include "./dominion.h"
-#include "./dominion_helpers.h"
-#include "./testing_helpers.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include <unity.h>
+#include <unity_fixture.h>
+#include "dominion.h"
+#include "dominion_helpers.h"
+#include <string.h>
 
-int main() {
-	const int chosenKingdomCards[10] = {adventurer, gardens, embargo, village, minion, mine, cutpurse, sea_hag, tribute, smithy};
-	const int playerInitialHands[][MAX_HAND] = { { smithy, copper, copper, copper, copper  }, { } };
-   	const int playerInitialHandSizes[] = { 5, 0 };
-	const int playerInitialDecks[][MAX_DECK] = { { gardens, embargo, village, minion }, { } };
-	const int playerInitialDeckSizes[] = { 4, 0 };
-	
-	int player = 0;
-	int cardToGain = adventurer;
-	int cardNotInGame = great_hall; 
-	int initialSupplyCount;
-	struct gameState state;
-	struct StatusTracker tracker;
-
-	initStatusTracker(&tracker);
-	initializeTestGame(2, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	initialSupplyCount = state.supplyCount[cardToGain];
-
-	printf("----gainCard Function Test----\n");
-
-	addContextToTracker("Gain card to hand.", &tracker);
-	assertTrue(gainCard(cardToGain, &state, 2, player) == 0, "Return value of gainCard should be zero indicating success.", &tracker);
-	assertTrue(onlyGainedCardNumTimes(cardToGain, 1, playerInitialHands[player], playerInitialHandSizes[player], state.hand[player], state.handCount[player]), "Hand should be unchanged aside from addition of gained card.", &tracker);
-	assertTrue(state.deckCount[player] == playerInitialDeckSizes[player] && sameOrderedCollectionOfCards(state.deck[player], playerInitialDecks[player], state.deckCount[player]), "Deck should remain unchanged after card is gained.", &tracker);
-	assertTrue(state.discardCount[player] == 0, "Discard should remain unchanged after card is gained.", &tracker);
-	assertTrue(state.supplyCount[cardToGain] == initialSupplyCount - 1, "Supply count of gained card should be one less after card is gained.", &tracker);
-
-	addContextToTracker("Gain card to deck.", &tracker);
-	initializeTestGame(2, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	assertTrue(gainCard(cardToGain, &state, 1, player) == 0, "Return value of gainCard should be zero indicating success.", &tracker);
-	assertTrue(onlyGainedCardNumTimes(cardToGain, 1, playerInitialDecks[player], playerInitialDeckSizes[player], state.deck[player], state.deckCount[player]), "Deck should be unchanged aside from addition of gained card.", &tracker);
-	assertTrue(state.handCount[player] == playerInitialHandSizes[player] && sameOrderedCollectionOfCards(state.hand[player], playerInitialHands[player], state.handCount[player]), "Hand should remain unchanged after card is gained.", &tracker);
-	assertTrue(state.discardCount[player] == 0, "Discard should remain unchanged after card is gained.", &tracker);
-	assertTrue(state.supplyCount[cardToGain] == initialSupplyCount - 1, "Supply count of gained card should be one less after card is gained.", &tracker);
-
-	addContextToTracker("Gain card to discard.", &tracker);
-	initializeTestGame(2, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	assertTrue(gainCard(cardToGain, &state, 0, player) == 0, "Return value of gainCard should be zero indicating success.", &tracker);
-	assertTrue(state.discardCount[player] == 1 && state.discard[player][0] == cardToGain, "Discard should be unchanged aside from addition of gained card.", &tracker);
-	assertTrue(state.handCount[player] == playerInitialHandSizes[player] && sameOrderedCollectionOfCards(state.hand[player], playerInitialHands[player], state.handCount[player]), "Hand should remain unchanged after card is gained.", &tracker);
-	assertTrue(state.deckCount[player] == playerInitialDeckSizes[player] && sameOrderedCollectionOfCards(state.deck[player], playerInitialDecks[player], state.deckCount[player]), "Deck should remain unchanged after card is gained.", &tracker);
-	assertTrue(state.supplyCount[cardToGain] == initialSupplyCount - 1, "Supply count of gained card should be one less after card is gained.", &tracker);
-
-	addContextToTracker("Gain card to invalid location.", &tracker);
-	initializeTestGame(2, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	assertTrue(gainCard(cardToGain, &state, 100, player) == -1, "Return value of gainCard should be -1 indicating failure.", &tracker);
-	assertTrue(state.handCount[player] == playerInitialHandSizes[player] && sameOrderedCollectionOfCards(state.hand[player], playerInitialHands[player], state.handCount[player]), "Hand should remain unchanged after gain fails.", &tracker);
-	assertTrue(state.deckCount[player] == playerInitialDeckSizes[player] && sameOrderedCollectionOfCards(state.deck[player], playerInitialDecks[player], state.deckCount[player]), "Deck should remain unchanged after gain fails.", &tracker);
-	assertTrue(state.discardCount[player] == 0, "Discard should remain unchanged after card gain fails.", &tracker);
-	assertTrue(state.supplyCount[cardToGain] == initialSupplyCount, "Supply count of gained card should be unchanged after gain fails.", &tracker);
-
-	addContextToTracker("Gain card not used in game.", &tracker);
-	initializeTestGame(2, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	assertTrue(gainCard(cardNotInGame, &state, 1, player) == -1 && gainCard(cardNotInGame, &state, 0, player) == -1 && gainCard(cardNotInGame, &state, 2, player) == -1, "Return value of gainCard should -1 indicating failure.", &tracker);
-	assertTrue(state.handCount[player] == playerInitialHandSizes[player] && sameOrderedCollectionOfCards(state.hand[player], playerInitialHands[player], state.handCount[player]), "Hand should remain unchanged after gain fails.", &tracker);
-	assertTrue(state.deckCount[player] == playerInitialDeckSizes[player] && sameOrderedCollectionOfCards(state.deck[player], playerInitialDecks[player], state.deckCount[player]), "Deck should remain unchanged after gain fails.", &tracker);
-	assertTrue(state.discardCount[player] == 0, "Discard should remain unchanged after card gain fails.", &tracker);
-	assertTrue(state.supplyCount[cardToGain] == initialSupplyCount, "Supply count of gained card should be unchanged after gain fails.", &tracker);
-
-	addContextToTracker("Gain card used in game that has run out of supply.", &tracker);
-	initializeTestGame(2, playerInitialHands, playerInitialHandSizes, playerInitialDecks, playerInitialDeckSizes, chosenKingdomCards, 10, 1, &state); 
-	state.supplyCount[cardToGain] = 0;
-	assertTrue(gainCard(cardToGain, &state, 1, player) == -1 && gainCard(cardToGain, &state, 0, player) == -1 && gainCard(cardToGain, &state, 2, player) == -1, "Return value of gainCard should be -1 indicating failure.", &tracker);
-	assertTrue(state.handCount[player] == playerInitialHandSizes[player] && sameOrderedCollectionOfCards(state.hand[player], playerInitialHands[player], state.handCount[player]), "Hand should remain unchanged after gain fails.", &tracker);
-	assertTrue(state.deckCount[player] == playerInitialDeckSizes[player] && sameOrderedCollectionOfCards(state.deck[player], playerInitialDecks[player], state.deckCount[player]), "Deck should remain unchanged after gain fails.", &tracker);
-	assertTrue(state.discardCount[player] == 0, "Discard should remain unchanged after card gain fails.", &tracker);
-	assertTrue(state.supplyCount[cardToGain] == 0, "Supply count of gained card should still zero after gain fails.", &tracker);
+TEST_GROUP(shuffle);
+static struct gameState *G;
+static int k_cards[10] = {adventurer, gardens,  embargo, village, minion, mine, cutpurse, sea_hag, tribute, smithy};
+static int seed = 42;
 
 
-	printTestResults(tracker);
-	destroyStatusTracker(&tracker);	
+// Test Setup and Teardown
+TEST_SETUP(shuffle) {
+	G = malloc(sizeof(struct gameState));
+	initializeGame(MAX_PLAYERS, k_cards, seed, G);
+}
+TEST_TEAR_DOWN(shuffle) {
+	free(G);
+}
 
-	return 0;
+// Individual Unit Tests
+
+TEST(shuffle, shuffleChangesDeck)
+{
+	int p = G->whoseTurn;
+	int expectedDeck[MAX_DECK];
+	int expectedDeckCount = G->deckCount[p];
+	memcpy(expectedDeck, G->deck[p], expectedDeckCount);
+
+	shuffle(p, G);
+
+	int actualDeck[MAX_DECK];
+	int actualDeckCount = G->deckCount[p];
+	memcpy(actualDeck, G->deck[p], actualDeckCount);
+
+	TEST_ASSERT_EQUAL(expectedDeckCount, actualDeckCount);
+	TEST_ASSERT_FALSE(!memcmp(expectedDeck, actualDeck, actualDeckCount));
+}
+
+// Tests that shuffle succeeds when there are no provinces
+TEST(shuffle, differentSeeds)
+{
+	struct gameState G1, G2;
+	memset(&G1, 0, sizeof(struct gameState));
+	memset(&G2, 0, sizeof(struct gameState));
+	initializeGame(MAX_PLAYERS, k_cards, 1, &G1);
+	initializeGame(MAX_PLAYERS, k_cards, 2, &G2);
+
+	int p = G1.whoseTurn;
+	int deckCount = G1.deckCount[p];
+	int initialDeck[MAX_DECK];
+	int shuffleDeck1[MAX_DECK];
+	int shuffleDeck2[MAX_DECK];
+
+	// Start with same decks in each gameState
+	memcpy(G2.deck[p], G1.deck[p], G1.deckCount[p]);
+	TEST_ASSERT_TRUE(!memcmp(G2.deck[p], G1.deck[p], deckCount));
+	memcpy(initialDeck, G1.deck[p], deckCount);
+
+
+	// Shuffle the decks and store their memory
+	shuffle(p, &G1);
+	memcpy(shuffleDeck1, G1.deck[p], deckCount);
+	shuffle(p, &G2);
+	memcpy(shuffleDeck2, G2.deck[p], deckCount);
+
+	// make sure everything is different
+	TEST_ASSERT_FALSE(!memcmp(initialDeck, shuffleDeck1, deckCount));
+	TEST_ASSERT_FALSE(!memcmp(initialDeck, shuffleDeck1, deckCount));
+	TEST_ASSERT_FALSE(!memcmp(shuffleDeck1, shuffleDeck2, deckCount));
+}
+
+TEST(shuffle, sameSeeds)
+{
+	struct gameState G1, G2;
+	memset(&G1, 0, sizeof(struct gameState));
+	memset(&G2, 0, sizeof(struct gameState));
+	initializeGame(MAX_PLAYERS, k_cards, seed, &G1);
+	initializeGame(MAX_PLAYERS, k_cards, seed, &G2);
+
+	int p = G1.whoseTurn;
+	int deckCount = G1.deckCount[p];
+	int initialDeck[MAX_DECK];
+	int shuffleDeck1[MAX_DECK];
+	int shuffleDeck2[MAX_DECK];
+
+	// Start with same decks in each gameState
+	memcpy(G2.deck[p], G1.deck[p], G1.deckCount[p]);
+	TEST_ASSERT_TRUE(!memcmp(G2.deck[p], G1.deck[p], deckCount));
+	memcpy(initialDeck, G1.deck[p], deckCount);
+
+
+	// Shuffle the decks and store their memory
+	shuffle(p, &G1);
+	memcpy(shuffleDeck1, G1.deck[p], deckCount);
+	shuffle(p, &G2);
+	memcpy(shuffleDeck2, G2.deck[p], deckCount);
+
+	// Make sure shuffled decks match
+	TEST_ASSERT_FALSE(!memcmp(initialDeck, shuffleDeck1, deckCount));
+	TEST_ASSERT_FALSE(!memcmp(initialDeck, shuffleDeck1, deckCount));
+	TEST_ASSERT_TRUE(!memcmp(shuffleDeck1, shuffleDeck2, deckCount));
+}
+
+TEST(shuffle, supplyDownEdgeCase)
+{
+}
+
+TEST(shuffle, noCoins)
+{
+}
+
+// Setup Tests and Run Them
+TEST_GROUP_RUNNER(shuffle);
+static void RunAllTests(void)
+{
+	RUN_TEST_CASE(shuffle, shuffleChangesDeck);
+	RUN_TEST_CASE(shuffle, differentSeeds);
+	RUN_TEST_CASE(shuffle, sameSeeds);
+	RUN_TEST_CASE(shuffle, supplyDownEdgeCase);
+	RUN_TEST_CASE(shuffle, noCoins);
+}
+int main(int argc, char const *argv[]) {
+	UnityMain(argc, argv, RunAllTests);
 }
