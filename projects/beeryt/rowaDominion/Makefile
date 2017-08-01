@@ -1,5 +1,5 @@
 
-SRCS := dominion cardEffects rngs
+SRCS := dominion rngs
 UNIT_TESTS := unittest1.o unittest2.o unittest3.o unittest4.o \
 			cardtest1.o cardtest2.o cardtest3.o cardtest4.o
 RAND_TESTS := randomtestcard1.o randomtestcard2.o randomtestadventurer.o randomtest_helper.o
