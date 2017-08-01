@@ -67,7 +67,6 @@ void randomGameFull()
         int timeout = 100;
         while (state->numActions && timeout-- && numHandCards(state))
         {
-            printf("%d\n", timeout);
             int pos = randInclusive(0, numHandCards(state));
             int c1 = randomSupplyCard(state);
             int c2 = randomSupplyCard(state);
