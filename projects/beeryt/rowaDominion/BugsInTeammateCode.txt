@@ -1,0 +1,20 @@
+# Bug 1
+### Related Tests
+- cardtest2.c -- cardEffectSmithy
+	- deckHasThreeFewerCards
+	- handIncreasedByThree
+## Description
+This appears to be an introduced bug in the Smithy card effect function. The bug manifests as only two cards moving from a player's deck to their hand. The bug was caught by tests which checked for the correct number of cards moving between play areas. The bug is located at dominion.c:680[^1] and can be fixed by changing >= to >.
+
+# Bug 2
+### Related Tests
+- unittest3.c -- buyCard
+	- victoryCardIncreaseScore
+- cardtest4.c -- cardEffectGardens
+	- victoryPointsForEveryTen
+	- multipleCardsStack
+	- includeDiscardDeckHand
+## Description
+This bug was in the base dominion code and involves how victory points are tallied. The bug was caught in several test functions which test for correct points after an event which can change points. The bug is caused by an incorrect tallying of cards for the Gardens effect. Instead of counting how many cards a player has in their deck, only the number of curse cards was considered. The bug is in scoreFor which is at dominion.c:417[^1]. I fixed the bug by rewriting the function to be much more consise and use fullDeckCount more correctly.
+
+[^1]: line numbers are from before the change so commit e15d45d

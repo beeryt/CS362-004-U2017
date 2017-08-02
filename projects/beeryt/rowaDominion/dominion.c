@@ -416,40 +416,15 @@ int isGameOver(struct gameState *state) {
 
 int scoreFor (int player, struct gameState *state) {
 
-	int i;
 	int score = 0;
-	//score from hand
-	for (i = 0; i < state->handCount[player]; i++)
-	{
-		if (state->hand[player][i] == curse) { score = score - 1; };
-		if (state->hand[player][i] == estate) { score = score + 1; };
-		if (state->hand[player][i] == duchy) { score = score + 3; };
-		if (state->hand[player][i] == province) { score = score + 6; };
-		if (state->hand[player][i] == great_hall) { score = score + 1; };
-		if (state->hand[player][i] == gardens) { score = score + ( fullDeckCount(player, 0, state) / 10 ); };
-	}
+	int cardCount = state->handCount[player] + state->deckCount[player] + state->discardCount[player];
 
-	//score from discard
-	for (i = 0; i < state->discardCount[player]; i++)
-	{
-		if (state->discard[player][i] == curse) { score = score - 1; };
-		if (state->discard[player][i] == estate) { score = score + 1; };
-		if (state->discard[player][i] == duchy) { score = score + 3; };
-		if (state->discard[player][i] == province) { score = score + 6; };
-		if (state->discard[player][i] == great_hall) { score = score + 1; };
-		if (state->discard[player][i] == gardens) { score = score + ( fullDeckCount(player, 0, state) / 10 ); };
-	}
-
-	//score from deck
-	for (i = 0; i < state->discardCount[player]; i++)
-	{
-		if (state->deck[player][i] == curse) { score = score - 1; };
-		if (state->deck[player][i] == estate) { score = score + 1; };
-		if (state->deck[player][i] == duchy) { score = score + 3; };
-		if (state->deck[player][i] == province) { score = score + 6; };
-		if (state->deck[player][i] == great_hall) { score = score + 1; };
-		if (state->deck[player][i] == gardens) { score = score + ( fullDeckCount(player, 0, state) / 10 ); };
-	}
+	score -= 1 * fullDeckCount(player, curse, state);
+	score += 1 * fullDeckCount(player, estate, state);
+	score += 3 * fullDeckCount(player, duchy, state);
+	score += 6 * fullDeckCount(player, province, state);
+	score += 1 * fullDeckCount(player, great_hall, state);
+	score += (cardCount / 10) * fullDeckCount(player, gardens, state);
 
 	return score;
 }
@@ -677,7 +652,7 @@ int smithyCardEffect(int currentPlayer, struct gameState *state, int handPos)
 	int i;	
 
 	//+3 Cards
-	for (i = 0; i <= 3; i++)
+	for (i = 0; i < 3; i++)
 	{
 		drawCard(currentPlayer, state);
 	}
